@@ -28,9 +28,9 @@ interface TableProps<T, G> {
         ].join(' ');
     }
 
-    private TableItem = memo<{ isSelected: boolean, item: RowItem<T>, gridTemplateColumns: string }>(props => {
+    private TableItem = memo<{ isSelected: boolean, selectionVersion: number | undefined, item: RowItem<T>, gridTemplateColumns: string }>(props => {
         const { columns, store, renderIconName, renderCell } = this.props;
-        const { isSelected, item, gridTemplateColumns } = props;
+        const { isSelected, selectionVersion, item, gridTemplateColumns } = props;
         return <div className={css('svTableRow', 'svTableRowItem', isSelected && 'svItemSelected')} style={{ gridTemplateColumns }}
             ref={ele => { // TODO: ForwardRef for Group
                 if (!isSelected || !ele) return;
@@ -38,7 +38,7 @@ interface TableProps<T, G> {
             }}
             onClick={e => {
                 e.stopPropagation();
-                store.selection.set(item);
+                store.selection.set({ row: item, version: (selectionVersion ?? 0) + 1 });
             }}>
             <div></div>
             {columns.map((col, i) => <Hi key={i} className="svTableCell"
@@ -67,12 +67,13 @@ interface TableProps<T, G> {
                 </div>
                 <div tabIndex={0} className={css('svTableBody', selection.get() && 'svSelected')} onKeyDown={this.onKeyDown}>
                     {rows.map(row => {
-                        const isSelected = selection.get() === row;
+                        const { row: selectedRow, version: selectionVersion } = selection.get();
+                        const isSelected = selectedRow === row;
                         if (row instanceof RowGroup) {
                             return <Hi key={row.key} className={css('svTableRow', 'svTableRowGroup', 'svTableCell', isSelected && 'svItemSelected')}
                                 onClick={e => {
                                     e.stopPropagation();
-                                    selection.set(row);
+                                    selection.set({ row });
                                     row.expanded = !row.expanded;
                                 }}>
                                 <div style={{ width: 6 }}></div>
@@ -82,7 +83,8 @@ interface TableProps<T, G> {
                             </Hi>;
                         }
                         if (row instanceof RowItem) {
-                            return <TableItem key={row.key} isSelected={isSelected} item={row} gridTemplateColumns={this.gridTemplateColumns} />;
+                            return <TableItem key={row.key} isSelected={isSelected} selectionVersion={isSelected ? selectionVersion : undefined} item={row}
+                                gridTemplateColumns={this.gridTemplateColumns} />;
                         }
                         return undefined; // Closed system: No other types expected.
                     })}
@@ -93,11 +95,12 @@ interface TableProps<T, G> {
     @action.bound private onKeyDown(e: KeyboardEvent<Element>) {
         const {store} = this.props;
         const {rows, selection} = store;
-        const index = rows.indexOf(selection.get()); // Rows
+        const {row} = selection.get();
+        const index = rows.indexOf(row); // Rows
         const handlers = {
-            ArrowUp: () => selection.set(rows[index - 1] ?? rows[index] ?? rows[0]),
-            ArrowDown: () => selection.set(rows[index + 1] ?? rows[index]),
-            Escape: () => selection.set(undefined)
+            ArrowUp: () => selection.set({ row: rows[index - 1] ?? rows[index] ?? rows[0] }),
+            ArrowDown: () => selection.set({ row: rows[index + 1] ?? rows[index] }),
+            Escape: () => selection.set({})
         } as Record<string, () => void>;
         const handler = handlers[e.key];
         if (handler) {

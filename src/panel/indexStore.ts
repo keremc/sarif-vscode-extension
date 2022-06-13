@@ -7,7 +7,7 @@ import { augmentLog, CommandExtensionToPanel, filtersColumn, filtersRow, parseAr
 import '../shared/extension';
 import { isActive } from './isActive';
 import { ResultTableStore } from './resultTableStore';
-import { Row, RowItem } from './tableStore';
+import { RowItem, Selection } from './tableStore';
 
 export class IndexStore {
     private driverlessRules = new Map<string, ReportingDescriptor>();
@@ -37,20 +37,20 @@ export class IndexStore {
 
         observe(this.logs, () => {
             if (this.logs.length) return;
-            this.selection.set(undefined);
+            this.selection.set({});
         });
 
         if (defaultSelection) {
             const store = this.resultTableStoreByLocation;
             when(() => !!store.rows.length, () => {
                 const item = store.rows.find(row => row instanceof RowItem) as RowItem<Result>;
-                this.selection.set(item);
+                this.selection.set({ row: item });
             });
         }
 
         autorun(() => {
-            const selectedRow = this.selection.get();
-            const result = selectedRow instanceof RowItem && selectedRow.item;
+            const { row } = this.selection.get();
+            const result = row instanceof RowItem && row.item;
             if (!result?._uri) return; // Bail on no result or location-less result.
             postSelectArtifact(result, result.locations?.[0]?.physicalLocation);
         });
@@ -64,7 +64,7 @@ export class IndexStore {
     @computed public get results() {
         return this.runs.map(run => run.results || []).flat();
     }
-    selection = observable.box<Row | undefined>(undefined)
+    selection = observable.box<Selection>({})
     resultTableStoreByLocation = new ResultTableStore('File', result => result._relativeUri, this, this, this.selection)
     resultTableStoreByRule     = new ResultTableStore('Rule', result => result._rule,        this, this, this.selection)
 
@@ -102,7 +102,7 @@ export class IndexStore {
         if (command === 'select') {
             const {id} = event.data; // id undefined means deselect.
             if (!id) {
-                this.selection.set(undefined);
+                this.selection.set({});
             } else {
                 const [logUri, runIndex, resultIndex] = id;
                 const result = this.logs.find(log => log._uri === logUri)?.runs[runIndex]?.results?.[resultIndex];

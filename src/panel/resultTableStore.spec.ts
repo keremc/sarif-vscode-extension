@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-import { Row, RowGroup, RowItem } from './tableStore';
+import { RowGroup, RowItem, Selection } from './tableStore';
 import { observable } from 'mobx';
 import { filtersRow, filtersColumn } from '../shared';
 import { ResultTableStore } from './resultTableStore';
@@ -11,7 +11,7 @@ import { Result } from 'sarif';
 
 describe('ResultTableStore', () => {
     const resultsSource = { results: log.runs![0].results! };
-    const selection = observable.box<Row | undefined>(undefined);
+    const selection = observable.box<Selection>({});
     const filtersSource = {
         keywords: '',
         filtersRow: filtersRow,

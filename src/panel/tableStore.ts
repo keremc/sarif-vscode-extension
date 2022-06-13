@@ -15,6 +15,11 @@ export class Column<T> {
     }
 }
 
+export interface Selection {
+    row?: Row;
+    version?: number;
+}
+
 export abstract class Row {
     private static instances = 0
     public readonly key = Row.instances++
@@ -45,7 +50,7 @@ export class TableStore<T, G> {
     constructor(
         readonly groupBy: (item: T) => G | undefined,
         readonly itemsSource: { results: ReadonlyArray<T> }, // Abstraction break.
-        readonly selection: IObservableValue<Row | undefined>) {
+        readonly selection: IObservableValue<Selection>) {
     }
 
     @computed({ keepAlive: true }) public get rowItems() {
@@ -105,7 +110,7 @@ export class TableStore<T, G> {
 
     select(item: T) {
         const row = this.rowItems.find(row => row.item === item);
-        this.selection.set(row);
+        this.selection.set({ row });
         if (row?.group) row.group.expanded = true;
     }
 }

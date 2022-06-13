@@ -4,7 +4,7 @@
 import { computed, IObservableValue } from 'mobx';
 import { Result } from 'sarif';
 import { Visibility } from '../shared';
-import { Column, Row, TableStore } from './tableStore';
+import { Column, Selection, TableStore } from './tableStore';
 
 export class ResultTableStore<G> extends TableStore<Result, G> {
     constructor(
@@ -16,7 +16,7 @@ export class ResultTableStore<G> extends TableStore<Result, G> {
             filtersRow: Record<string, Record<string, Visibility>>;
             filtersColumn: Record<string, Record<string, Visibility>>;
         },
-        readonly selection: IObservableValue<Row | undefined>) {
+        readonly selection: IObservableValue<Selection>) {
         super(
             groupBy,
             resultsSource,
